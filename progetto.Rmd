@@ -1,0 +1,763 @@
+---
+title: "Esame fondamenti di scienza dei dati"
+author: "Cristiano Roman"
+date: "4/6/2021"
+output:
+  ioslides_presentation:
+    css: ./style.css
+    incremental: yes
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE,echo = FALSE, message = FALSE, warning = FALSE)
+
+```
+
+```{r,include=FALSE}
+
+library(readr)
+library(tidyverse)
+library(ggplot2)
+library(countrycode)
+library(broom)
+library(corrplot)
+
+#read suicide dataset
+suicide = read_csv("C:/Users/Cristiano/Desktop/cris/FondamentiR/progetto esame/master.csv")
+
+```
+
+
+## Introduzione
+
+Dataset realizzato per trovare segnali correlati all'aumento dei **suicidi** a livello globale, dal 1985 al 2016.
+Si considerano due aspetti in particolar modo:
+
+* *sociale*
+* *economico*
+
+```{r}
+head(suicide)
+
+```
+
+### **variabili particolari**:
+
+
+* **HDI**:
+  + indicatore di sviluppo macroeconomico usato accanto al PIL dall' ONU a partire dal 1993 per valutare     la qualità della vita dei membri di un Paese.
+  + da 0 a 1 e si suddivide in quattro gruppi: dai Paesi a sviluppo umano molto alto a quelli a basso sviluppo umano.
+  + definito come la media geometrica di tre indici di base, legati rispettivamente alla speranza di        vita, al livello di istruzione e al reddito
+
+* **GDP**
+  + Gross Domestic Product, significato equivalente al PIL italiano, ma tradotto in inglese [GDP](https://www.ecnews.it/gross-domestic-product-tradurre-pil-inglese/)
+  
+* **Generation**
+  + G.I. Generation - nati nel 1901 - 1927
+  + Silent - nati nel 1925 - 1942
+  + Boomers - nati nel 1946 - 1964
+  + Generation X - nati nel 1960 - 1980
+  + Millennials - nati nel 1980 - 2000
+  + Generation Z - nati a metà anni '90 - inizi '00
+  
+
+## Preprocessing del dataset
+
+* L'indice di sviluppo umano(HDI) contiene molti valori di tipo *NA*
+```{r}
+#HDI -> NA
+sum(is.na(suicide$`HDI for year`))
+
+#osservazioni totali
+sum(!is.na(suicide$country))
+
+```
+
+* eliminiamo la variabile HDI in quanto contiene quasi 20000 dati *NA* su 27820, corrispondenti a circa *2/3* delle osservazioni totali,rendendola così inutilizzabile
+  
+```{r}
+#eliminare var HDI
+suicide = suicide %>%
+  select(-(`HDI for year`))
+
+```
+
+* eliminiamo i dati del 2016 poichè sono stati studiati pochi stati
+
+```{r}
+
+suicide = suicide %>%
+  filter(year < 2016)
+
+```
+
+
+* aggiungiamo la variabile *continent* con i relativi dati associati agli stati attraverso la libreria [*countrycode*](https://cran.r-project.org/web/packages/countrycode/countrycode.pdf)
+
+
+```{r}
+
+suicide$continent = countrycode(sourcevar = suicide$country,
+                              origin = "country.name",
+                              destination = "continent")
+```
+
+  
+* rinominiamo alcune variabili
+
+
+```{r}
+#rinominare var
+suicide = suicide %>%
+  rename(suicides = suicides_no,
+         country_year = `country-year`,
+         gdp_for_year = `gdp_for_year ($)`,
+         gdp_per_capita = `gdp_per_capita ($)`)
+
+suicide$age = factor(suicide$age, 
+                   ordered = TRUE, 
+                   levels = c("5-14 years",
+                              "15-24 years", 
+                              "25-34 years", 
+                              "35-54 years", 
+                              "55-74 years", 
+                              "75+ years"))
+
+
+```  
+  
+  
+* escludiamo gli stati con meno di 2 anni di dati a disposizione
+
+```{r}
+
+#divido il num di righe di ogni stato per trovare gli anni
+num_anni = suicide %>%
+  group_by(country) %>%
+  summarize(righe = n(), 
+            anni = righe / 12) %>%
+  arrange(anni)
+
+
+#stati con più di 2 anni di dati
+suicide = suicide %>%
+  filter(!(country == head(num_anni$country,5)))
+
+head(suicide)
+
+```
+
+
+```{r}
+
+summary(suicide)
+
+```
+
+## Variazione abitanti dal 1987 al 2016
+
+```{r}
+
+suicide %>%
+  group_by(year)%>%
+  summarise(n = sum(population)) %>%
+  ggplot(aes(year,n)) + 
+  geom_line(show.legend = FALSE,size = 1,color = "blue") + 
+  geom_point(size = 2,color = "blue") +
+  labs(title = "Variazione abitanti nel Mondo",
+       x = "Anno",
+       y = "Numero persone") + 
+  scale_x_continuous(breaks = seq(1985,2015,3)) +
+  theme_minimal()
+
+```
+
+## Variazione GDP dal 1987 al 2016
+
+
+```{r}
+suicide %>%
+  group_by(year) %>%
+  summarize(n = sum(gdp_for_year)) %>%
+  ggplot(aes(year,n)) + 
+  geom_line(show.legend = FALSE,size = 1,color = "green") + 
+  geom_point(size = 2,color = "grey") +
+  labs(title = "Variazione GDP",
+       x = "Anno",
+       y = "GDP") + 
+  scale_x_continuous(breaks = seq(1985,2015,3)) +
+  theme_minimal()
+```
+
+* correlazione fra variazione abitanti e GDP
+
+```{r}
+
+cor(suicide$population,suicide$gdp_for_year)
+
+```
+
+
+## Analisi suicidi su 100.000 abitanti dal 1987 al 2016
+
+* nel *Mondo*
+
+```{r}
+
+#generalizzazione
+suicide %>%
+  group_by(year) %>%
+  summarize(popolazione = sum(population), 
+            suicidi = sum(suicides), 
+            suicidi_per_100k = (suicidi / popolazione) * 100000) %>%  #semplice proporzione per visualizzare meglio i dati
+  ggplot(aes(year,suicidi_per_100k)) + 
+  geom_line(size = 1,color = "red" ) +
+    geom_point(size = 2,color = "red") +
+  labs(title = "Suicidi nel Mondo(per 100000 abitanti)",
+       x = "Anno",
+       y = "Suicidi per 100k ab") +
+  scale_x_continuous(breaks = seq(1985, 2016, 2)) + 
+  theme_minimal()
+  
+#suicide %>%
+ # group_by(year) %>%
+  #summarise(suicidi_per_100k=sum(`suicides/100k pop`)) %>%
+  #ggplot(aes(year,suicidi_per_100k)) + 
+  #geom_line(size = 1,color = "red" ) +
+   # geom_point(size = 2,color = "red")
+
+```
+
+* in *Italia*
+
+```{r}
+
+suicide%>%
+  group_by(year) %>%
+  filter(country == "Italy") %>% 
+  summarise(popolazione = sum(population), 
+            suicidi = sum(suicides), 
+            suicidi_per_100k_Italia = (suicidi / popolazione) * 100000) %>%
+  ggplot(aes(year,suicidi_per_100k_Italia)) + 
+  geom_line(size = 1,color = "red" ) +
+    geom_point(size = 2,color = "red") +
+  labs(title = "Suicidi in Italia(per 100000 abitanti)",
+       x = "Anno",
+       y = "Suicidi per 100k ab") + 
+  scale_x_continuous(breaks = seq(1985, 2015, 2)) + 
+  theme_minimal()
+
+
+```
+
+
+## Analisi suicidi nei Continenti
+
+
+```{r}
+
+#stati
+suicide %>%
+  group_by(continent) %>%
+  summarise(popolazione = sum(population), 
+            suicidi = sum(suicides), 
+            suicidi_per_100k = (suicidi / popolazione) * 100000) %>%
+   arrange(suicidi_per_100k) %>%
+   ggplot(aes(continent,suicidi_per_100k,fill=continent)) + 
+  geom_bar(stat = "Identity",width = 0.4) +
+  labs(title = "Suicidi per Continenti nel Mondo(per 100000 abitanti)",
+       x = "Continenti",
+       y = "Suicidi per 100k ab") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+```
+
+
+* l'Africa ha in indice così basso perchè non sono stati analizzati sufficienti stati
+
+
+```{r}
+
+suicide %>%
+  group_by(country) %>%
+  filter(continent == "Africa") %>%
+  summarise(righe = n())
+
+
+```
+
+
+## Analisi suicidi nei vari stati
+
+```{r}
+
+#stati
+states = suicide %>%
+  group_by(continent,country) %>%
+  summarise(popolazione = sum(population), 
+            suicidi = sum(suicides), 
+            suicidi_per_100k = (suicidi / popolazione) * 100000) %>%
+   arrange(suicidi_per_100k)
+
+states$country = factor(states$country, 
+                        ordered = TRUE,
+                        levels = states$country)
+
+ggplot(states ,aes(country,suicidi_per_100k,fill=continent)) + 
+  geom_bar(stat = "Identity",width = 0.4) +
+  labs(title = "Suicidi per Stati nel Mondo(per 100000 abitanti)",
+       x = "Stato",
+       y = "Suicidi per 100k ab",
+       fill = "Continent") +
+  coord_flip() +
+  theme_minimal() +
+  theme(legend.position = "right")
+
+```
+
+
+
+## Analisi suicidi in base all'età
+
+* nel *Mondo*
+
+```{r}
+
+#suicidi età
+suicide %>%
+  group_by(age) %>%
+  summarise(popolazione = sum(population), 
+            suicidi = sum(suicides), 
+            suicidi_per_100k = (suicidi / popolazione) * 100000) %>%
+   arrange(suicidi_per_100k) %>%
+   ggplot(aes(age,suicidi_per_100k,fill=age)) + 
+  geom_bar(stat = "Identity",width = 0.4) +
+  labs(title = "Suicidi per Età nel Mondo(per 100000 abitanti)",
+       x = "Età",
+       y = "Suicidi per 100k ab") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+
+```
+
+
+* in *Italia*
+
+```{r}
+
+#suicidi età
+suicide %>%
+  group_by(age) %>%
+  filter(country == "Italy") %>%
+  summarise(popolazione = sum(population), 
+            suicidi = sum(suicides), 
+            suicidi_per_100k = (suicidi / popolazione) * 100000) %>%
+   arrange(suicidi_per_100k) %>%
+   ggplot(aes(age,suicidi_per_100k,fill=age)) + 
+  geom_bar(stat = "Identity",width = 0.4) +
+  labs(title = "Suicidi per Età in Italia(per 100000 abitanti)",
+       x = "Età",
+       y = "Sicidi per 100k ab") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+```
+
+
+## Analisi età suicidi per continente
+
+```{r}
+suicide %>%
+  group_by(age,continent) %>%
+  summarise(popolazione = sum(population), 
+            suicidi = sum(suicides), 
+            suicidi_per_100k = (suicidi / popolazione) * 100000) %>%
+   ggplot(aes(age,suicidi_per_100k,fill=continent)) + 
+  geom_bar(stat = "identity" ,position = "dodge") +
+  labs(title = "Suicidi per Continenti nel Mondo(per 100000 abitanti)",
+       x = "Età",
+       y = "Suicidi per 100k ab") +
+  theme_minimal() +
+  theme(legend.position = "right")
+```
+
+
+
+## Analisi suicidi di uomini e donne
+
+* nel *Mondo*
+
+```{r}
+
+#donne vs uomini nel mondo
+suicide %>%
+  group_by(sex) %>%
+  summarise(popolazione = sum(population), 
+            suicidi = sum(suicides), 
+            suicidi_per_100k = (suicidi / popolazione) * 100000) %>%
+   ggplot(aes(sex,suicidi_per_100k,fill=sex)) + 
+  geom_bar(stat = "Identity",width = 0.4) +
+  labs(title = "Suicidi nel Mondo(per 100000 abitanti)",
+       x = "Sesso",
+       y = "Sicidi per 100k ab") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+
+```
+
+* in *Italia*
+
+```{r}
+
+#donne vs uomini in Italia
+suicide %>%
+  group_by(sex) %>%
+   filter(country == "Italy") %>%
+   summarise(popolazione = sum(population), 
+            suicidi = sum(suicides), 
+            suicidi_per_100k_Italia = (suicidi / popolazione) * 100000) %>%
+    ggplot(aes(sex,suicidi_per_100k_Italia,fill=sex)) + 
+  geom_bar(stat = "Identity",width = 0.4) +
+  labs(title = "Suicidi in Italia(per 100000 abitanti)",
+       x = "Sesso",
+       y = "Suicidi per 100k ab") +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+
+```
+
+
+## Analisi suicidi di uomini e donne per continente
+
+
+```{r}
+
+suicide %>%
+  group_by(continent, sex) %>%
+  summarize(suicidi = sum(suicides), 
+            popolazione = sum(population), 
+            suicidi_per_100k = (suicidi / popolazione) * 100000) %>%
+  ggplot(aes(x = continent, y = suicidi_per_100k, fill = sex)) + 
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Differenza di sesso per Continente",
+   x = "Continenti", 
+   y = "Suicidi per 100k ab") +
+  theme_minimal()
+```
+
+
+## Analisi fra ricchezza di uno stato e suicidi
+
+* È vero che maggiore è la ricchezza nel tempo di uno stato, minore è il suo numero di suicidi?
+
+```{r}
+
+#correlazione media anni-suicidi
+gdp_per_stato = suicide %>%
+  group_by(country, year) %>%
+  summarize(gdp_per_capita = mean(gdp_per_capita))
+
+gdp_cor_anno = gdp_per_stato %>%
+  group_by(country) %>%
+  summarise(cor_gdp = cor(year,gdp_per_capita))
+  
+correlazione_media = gdp_cor_anno %>%
+  filter(cor_gdp != "NA") %>%
+  summarise(cor_med = (sum(cor_gdp)/100))
+
+correlazione_media
+
+```
+
+* Questo risultato conferma l'ipotesi iniziale in quanto c'è una forte correlazione (0.851) fra il *gdp pro capite* e lo scorrere     degli anni,che presuppongono lo sviluppo economico di ogni stato.
+
+
+## Analisi del numero di suicidi degli stati rispetto al GDP
+
+* Gli stati più ricchi hanno un numero di suicidi maggiore ?
+
+```{r}
+
+#gdp continenti
+gdp_continent = suicide %>%
+  group_by(country,continent) %>%
+  summarize(popolazione = sum(population), 
+            suicidi = sum(suicides), 
+            suicidi_per_100k = (suicidi / popolazione) * 100000,
+            gdp_per_capita= mean(gdp_per_capita))  
+
+
+ggplot(gdp_continent,aes(gdp_per_capita,suicidi_per_100k,color = continent)) +
+  geom_point() + 
+  labs(title = "Confronto GDP(pro capite) e suicidi per 100k abitanti",
+       x = "GDP(pro capite)",
+       y = "suicidi per 100k ab") +
+  scale_x_continuous(breaks = seq(0,70000,10000)) +
+  theme_minimal()
+
+
+```
+
+
+* tuttavia c'è qualche valore residuo che ha un impatto significativo nello studio del modello
+
+* visualizziamo gli *outliers* attraverso un boxplot
+
+```{r}
+
+suicide %>%
+  group_by(country,continent) %>%
+  summarize(popolazione = sum(population), 
+            suicidi = sum(suicides), 
+            suicidi_per_100k = (suicidi / popolazione) * 100000,
+            gdp_per_capita= mean(gdp_per_capita)) %>%  
+  ggplot(aes(gdp_per_capita,suicidi_per_100k,color = continent)) +
+  geom_boxplot(outlier.colour = "red") + 
+  labs(title = "Confronto GDP(pro capite) e suicidi per 100k abitanti",
+       x = "GDP(pro capite)",
+       y = "suicidi per 100k ab") +
+  scale_x_continuous(breaks = seq(0,70000,10000)) +
+  theme_minimal()
+
+```
+
+* analisi del modello con *outliers*
+
+```{r}
+
+model1 <- lm(suicidi_per_100k ~ gdp_per_capita, data = gdp_continent)
+
+summary(model1)
+
+```
+
+* il valore del coefficiente di determinazione **R^2^** è molto basso (0.006),il che significa che la varibile    esplicativa *Gdp_per_capita* non spiega in maniera ottimale la variabile riposta *suicidi_per_100k*.
+
+
+* eliminiamo gli *outliers*
+
+
+```{r}
+
+
+#distanza di Cook
+gdp_continent_no_outliers = model1 %>%  #procedura trovata in internet
+  augment() %>%
+  arrange(desc(.cooksd)) %>%
+  filter(.cooksd < 4/nrow(.)) %>% 
+  inner_join(gdp_continent, by = c("suicidi_per_100k", "gdp_per_capita")) %>%
+  select(country, continent, gdp_per_capita, suicidi_per_100k)
+
+model2 = lm(suicidi_per_100k ~ gdp_per_capita, data = gdp_continent_no_outliers)
+
+summary(model2)
+
+```
+
+
+*  in questo caso il coefficiente di determinazione è leggermente più alto ma non è ancora sufficiente.
+Tuttavia il *p-value* (0.028) è minore rispetto alla soglia tipica (0.05) di rifiuto dell'ipotesi nulla, e quindi possiamo rifiutare l'ipotesi nulla tale che il Gdp di una nazione non è in relazione con il tasso di suicidi
+
+
+* visualizziamo il grafico corretto
+
+```{r}
+
+ggplot(gdp_continent_no_outliers,aes(gdp_per_capita,suicidi_per_100k,color = continent)) + 
+  geom_point() + 
+  geom_smooth(method = "lm",aes(group = 1)) + 
+  labs(title = "Confornto GDP(pro capite) e suicidi per 100k abitanti",
+       x = "GDP(pro capite)",
+       y = "suicidi per 100k ab") +
+  scale_y_continuous(breaks = seq(0,30,5)) +
+  scale_x_continuous(breaks = seq(0,80000,10000)) +
+  theme_minimal()
+
+```
+
+* notiamo che la correlazione positiva,nonostante sia bassa, è evidente nell'andamento della retta.
+
+* formula della retta di regressione: 
+$$
+suicidi(100k) = 8.337 + ( 1.066*10^-^4 ) \cdot GDP(procapite)
+$$
+
+
+## Analisi suicidi rispetto a generazione di nascita e anni trascorsi
+
+```{r}
+
+suicide %>%
+  group_by(year,generation) %>%
+  summarize(popolazione = sum(population), 
+            suicidi = sum(suicides), 
+            suicidi_per_100k = (suicidi / popolazione) * 100000)%>%
+ggplot(aes(year,suicidi_per_100k,color = generation)) +
+  geom_line(size = 1,alpha = 0.4) + 
+  geom_smooth(method = "lm",alpha = 0.2) +
+  labs(title = "Confronto fra suicidi e categorie di età",
+       x = "anno",
+       y = "suicidi per 100k ab") +
+  scale_x_continuous(breaks = seq(1985,2015,3)) +
+  theme_minimal()
+
+```
+
+* notiamo che le generazioni *Silent('25-'42)* e *Boomers('46-'64)* ha un numero di suicidi pressochè costante, mentre per *Generation X('-')* e *Millennials('-')* è in forte crescita.
+
+
+
+## Analisi suicidi rispetto a età e anni trascorsi
+
+* Come varia il numero di suicidi per età comprese fra i 5 e 75+ anni ?
+
+```{r}
+
+suicide %>%
+  group_by(year,age) %>%
+  summarize(popolazione = sum(population), 
+            suicidi = sum(suicides), 
+            suicidi_per_100k = (suicidi / popolazione) * 100000) %>%
+  ggplot(aes(year,suicidi_per_100k,color = age)) +
+    geom_line(aes(fill = age),size = 1) + 
+    labs(title = "Confronto fra suicidi ed età",
+         x = "anno",
+         y = "suicidi per 100k ab") +
+    scale_x_continuous(breaks = seq(1985,2015,3)) +
+    theme_minimal()
+
+```
+
+* il trend delle curve è in discesa per quasi tutte le categorie di età, il che significa che con gli anni il numero di suicidi continua a diminuire,soprattutto per la categoria degli *over 75*. Mentre la curva dei suicidi per le persone con età da 15 a 24 ha un andamento costante.
+
+## Analisi suicidi rispetto ad anni trascorsi e continenti
+
+
+* Come varia il numero di suicidi con gli anni nei vari continenti?
+
+
+```{r}
+
+suicide %>%
+  group_by(year,continent) %>%
+  summarize(popolazione = sum(population), 
+            suicidi = sum(suicides), 
+            suicidi_per_100k = (suicidi / popolazione) * 100000,
+            gdp_per_capita= mean(gdp_per_capita)) %>%
+  ggplot(aes(year,suicidi_per_100k,color = continent)) +
+  geom_line(alpha = 0.4,size = 1)+ 
+    geom_smooth(method = "lm",alpha = 0.2) +
+  labs(title = "Confronto fra suicidi e categorie di età",
+       x = "anno",
+       y = "suicidi per 100k ab") +
+  scale_x_continuous(breaks = seq(1985,2015,3)) +
+  theme_minimal()
+
+```
+
+## Analisi suicidi in rapporto a GDP pro capite e sesso 
+
+```{r}
+
+gdp_sex = suicide %>%
+  group_by(sex,country) %>%
+  summarize(popolazione = sum(population), 
+            suicidi = sum(suicides), 
+            suicidi_per_100k = (suicidi / popolazione) * 100000,
+            gdp_per_capita= mean(gdp_per_capita)) 
+
+  ggplot(gdp_sex,aes(gdp_per_capita,suicidi_per_100k,color = sex)) +
+  geom_point() + 
+  labs(title = "Confronto fra sesso e gdp pro capite",
+       x = "GDP pro capite",
+       y = "suicidi per 100k ab") +
+  scale_x_continuous(breaks = seq(0,80000,10000)) +
+  theme_minimal()
+
+
+```
+
+* visualizziamo gli *outliers*
+
+
+```{r}
+
+ggplot(gdp_sex,aes(gdp_per_capita,suicidi_per_100k,color = sex)) +
+  geom_boxplot() + 
+  labs(title = "Confronto fra sesso e gdp pro capite",
+       x = "GDP pro capite",
+       y = "suicidi per 100k ab") +
+  scale_x_continuous(breaks = seq(0,80000,10000)) +
+  theme_minimal()
+
+```
+
+* analizziamo il modello poco preciso
+
+```{r}
+
+mod4 = lm(suicidi_per_100k ~ sex,gdp_sex)
+summary(mod4)
+
+```
+
+
+* cancelliamo gli *outliers* dal modello
+
+```{r}
+
+
+gdp_sex_lm = mod4 %>%
+augment() %>%
+  arrange(desc(.cooksd)) %>%
+  filter(.cooksd < 4/nrow(.)) %>% 
+  inner_join(gdp_sex, by = c("suicidi_per_100k", "sex")) %>%
+  select(sex,country,gdp_per_capita, suicidi_per_100k)
+
+ggplot(gdp_sex_lm,aes(gdp_per_capita,suicidi_per_100k,color = sex)) +
+  geom_boxplot() + 
+  labs(title = "Confronto fra sesso e gdp pro capite",
+       x = "GDP pro capite",
+       y = "suicidi per 100k ab") +
+  scale_x_continuous(breaks = seq(0,80000,10000)) +
+  theme_minimal()
+
+```
+
+
+```{r}
+
+ggplot(gdp_sex_lm,aes(gdp_per_capita,suicidi_per_100k,color = sex)) +
+  geom_point() + 
+  geom_smooth(method = "lm",alpha = 0.2) + 
+  labs(title = "Confronto fra sesso e gdp pro capite",
+       x = "GDP pro capite",
+       y = "suicidi per 100k ab") +
+  scale_x_continuous(breaks = seq(0,80000,10000)) +
+  theme_minimal()
+
+
+```
+
+
+* analizziamo il modello con maggior correlazione
+
+```{r}
+
+mod5 = lm(suicidi_per_100k ~ sex,gdp_sex_lm)
+summary(mod5)
+
+```
+* con un **R^2** pari a *0.3* questo modello è abbastanza affidabile e ha un buon potere predittivo per quanto riguarda la variabile risposta *suicidi_per_100k* e la variabile esplicativa *sex*.
+
+* possiamo concludere che per gli uomini al crescere del *GDP pro capite* cresce il tasso di suicidi,mentre le donne qualunque sia il valore del *GDP pro capite* hanno un tasso di suicidi per lo più costante ed è nettamente più basso rispetto a quello degli uomini
+
+***
+
+FINE
