@@ -792,6 +792,9 @@ summary(mod5)
 
 ***
 
+* **mappa riassuntiva**
 
+![](./mappa_suicidi.png)
+***
 
 **FINE PRESENTAZIONE**
