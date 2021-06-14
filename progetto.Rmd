@@ -177,7 +177,9 @@ gdp = suicide %>%
   theme_minimal()
   
 ```
-* è evidente un'elevata correlazione fra il GDP totale e gli anni passati
+
+
+* è evidente la correlazione fra il GDP totale e gli anni 
 
 ```{r}
 
@@ -188,7 +190,7 @@ cor(gdp$year,gdp$n)
 
 ## Suicidi dal 1985 al 2015
 
-* * l'**eutanasia** non viene considerata come suicidio in questo dataset,in quanto è considerata principalmente una procedura medica.
+* l'**eutanasia** non viene valutata come suicidio,in quanto è considerata principalmente una procedura medica.
 
 * nel *Mondo*
 
@@ -219,6 +221,8 @@ suicide %>%
 
 ```
 
+*  In corrispondenza della **crisi economico-finanziaria** del 2008 è stato documentato un aumento dei suicidi in molti Paesi; in Italia, tale aumento si è protratto anche negli anni seguenti
+
 * in *Italia*
 
 ```{r}
@@ -240,6 +244,8 @@ suicide%>%
 
 
 ``` 
+
+
 
 ## Suicidi per continente
 
@@ -309,9 +315,12 @@ ggplot(states,aes(country,suicidi_per_100k,fill=continent)) +
 
 ```
 
+* L’Italia si colloca tra i Paesi del mondo a più basso rischio di suicidio, con un tasso di mortalità per questa causa che è quasi la metà rispetto alla media degli altri
 
 
 ## Suicidi per età
+
+* Il tasso di suicidio è più elevato tra gli anziani, ma è tra i giovani che il suicidio rappresenta la percentuale più importante sul totale dei decessi; in Italia, così come nel resto del mondo, il suicidio è la terza più frequente causa di morte tra le persone di 15-34 anni.
 
 * nel *Mondo*
 
@@ -401,10 +410,10 @@ suicide %>%
 ```
 
 
-* gli uomini hanno un tasso di suicidio circa quattro volte superiore alle donne,tuttavia è affermato che le donne tentano il suicidio leggermente di più rispetto agli uomini perché sono maggiormente diagnosticate come affette da depressione.
+* gli uomini hanno un tasso di suicidio circa quattro volte superiore alle donne,tuttavia è affermato che le donne tentano il suicidio più spesso rispetto agli uomini perché diagnosticate come affette da depressione.
 
 
-* è stato riscontrato che i fattori di rischio come disoccupazione, pensionamento ed essere single sono tutti fattori di rischio significativi per il suicidio degli uomini, mentre sono molto meno significativi nelle donne.
+* è stato riscontrato che i fattori di rischio come disoccupazione, pensionamento e l'essere single sono tutti fattori di rischio significativi per il suicidio degli uomini, mentre sono molto meno significativi nelle donne.
 
 
 ```{r}
@@ -447,7 +456,7 @@ correlazione_media
 
 ```
 
-* questo risultato conferma l'ipotesi iniziale in quanto c'è una forte correlazione (0.880) fra il *gdp pro capite* e lo scorrere     degli anni,che presuppone lo sviluppo economico di ogni stato.
+* il risultato conferma l'ipotesi in quanto c'è una forte correlazione (0.880) fra il *gdp pro capite* e lo scorrere     gli *anni*,che presuppongono lo sviluppo economico di ogni stato.
 
 
 ##  Numero di suicidi per stato rispetto al GDP
@@ -533,8 +542,8 @@ summary(model2)
 ```
 
 
-* il *coefficiente di determinazione* è leggermente più alto ma non è sufficiente per rendere affidabile il modello.
-Tuttavia il *p-value* (0.05) è minore rispetto alla soglia tipica (0.05) di rifiuto dell'ipotesi nulla, e quindi possiamo rifiutare l'ipotesi nulla tale per cui il Gdp di una nazione non è in relazione con il tasso di suicidi
+* il *coefficiente di determinazione* è più alto ma non è sufficiente a rendere affidabile il modello.
+Tuttavia il *p-value* (0.03) è minore rispetto alla soglia tipica (0.05) di rifiuto dell'ipotesi nulla, e quindi possiamo rifiutare l'ipotesi nulla tale per cui il Gdp di una nazione non è in relazione con il tasso di suicidi
 
 
 * visualizziamo il grafico corretto
@@ -557,7 +566,7 @@ ggplot(gdp_continent_no_outliers,aes(gdp_per_capita,suicidi_per_100k,color = con
 
 * formula della **retta di regressione**: 
 
-$suicidi(100k) = 8.337 + ( 1.066*10^-4 ) * GDP(procapite)$
+$suicidi(100k) = 8.337 + ( 1.066 \cdot 10^-4 ) \cdot  GDP(procapite)$
 
 
 ## Suicidi rispetto alla generazione di nascita 
@@ -633,6 +642,8 @@ suicide %>%
   theme_minimal()
 
 ```
+
+
 * in *Europa,Asia e Africa*, il numero di suicidi è in calo, mentre in *America e Oceania* è in leggera crescita.
 
 
@@ -709,7 +720,7 @@ ggplot(gdp_sex_lm,aes(gdp_per_capita,suicidi_per_100k,color = sex)) +
 ```
 
 
-* visualizziamo il modello senza *outliers*
+* visualizziamo il grafico senza *outliers*
 
 ```{r}
 
@@ -726,7 +737,7 @@ ggplot(gdp_sex_lm,aes(gdp_per_capita,suicidi_per_100k,color = sex)) +
 ```
 
 
-* analizziamo il modello più affidabile
+* analizziamo il modello corretto
 
 
 ```{r}
@@ -735,7 +746,7 @@ mod4 = lm(suicidi_per_100k ~ sex,gdp_sex_lm)
 summary(mod4)
 
 ```
-* con un **R^2** pari a *0.51* questo modello è abbastanza affidabile e ha un buon potere predittivo per quanto riguarda la variabile risposta *suicidi_per_100k* rispetto alla variabile esplicativa *sex*.
+* con un **R^2** pari a *0.3* questo modello è abbastanza affidabile e ha un mediocre potere predittivo per quanto riguarda la variabile risposta *suicidi_per_100k* rispetto alla variabile esplicativa *sex*.
 
 * possiamo concludere che per gli uomini al crescere del *GDP pro capite* cresce il tasso di suicidi,mentre le donne qualunque sia il valore del *GDP pro capite* hanno un tasso di suicidi per lo più costante, nettamente più basso rispetto a quello degli uomini
 
@@ -764,13 +775,15 @@ summary(mod5)
 
 * il *coefficiente di determinazione* con un valore di *(0.96)* indica un'ottima correlazione fra le variabili prese in considerazione, e quindi il modello è affidabile
 
-* inoltre il *p-value* con un valore ben sotto la soglia minima di rifiuto dell'ipotesi nulla ci permette di confermare l'ipotesi fatta all'inizio dell'analisi.
+* inoltre il *p-value* con un valore ben sotto la soglia minima di rifiuto dell'ipotesi nulla ci permette di affermare l'ipotesi iniziale.
 
 ***
 
 * **mappa riassuntiva**
 
 ![](./mappa_suicidi.png)
+
+
 ***
 
 **FINE PRESENTAZIONE**
