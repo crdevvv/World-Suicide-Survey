@@ -188,6 +188,8 @@ cor(gdp$year,gdp$n)
 
 ## Suicidi dal 1985 al 2015
 
+* * l'**eutanasia** non viene considerata come suicidio in questo dataset,in quanto è considerata principalmente una procedura medica.
+
 * nel *Mondo*
 
 ```{r}
@@ -238,8 +240,6 @@ suicide%>%
 
 
 ``` 
-
-* l'**eutanasia** non viene considerata come suicidio in questo dataset,in quanto è considerata principalmente una procedura medica.
 
 ## Suicidi per continente
 
