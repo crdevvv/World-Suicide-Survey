@@ -533,8 +533,8 @@ summary(model2)
 ```
 
 
-* il *coefficiente di determinazione* è leggermente più alto ma non è ancora sufficiente.
-Tuttavia il *p-value* (0.03) è minore rispetto alla soglia tipica (0.05) di rifiuto dell'ipotesi nulla, e quindi possiamo rifiutare l'ipotesi nulla tale per cui il Gdp di una nazione non è in relazione con il tasso di suicidi
+* il *coefficiente di determinazione* è leggermente più alto ma non è sufficiente per rendere affidabile il modello.
+Tuttavia il *p-value* (0.05) è minore rispetto alla soglia tipica (0.05) di rifiuto dell'ipotesi nulla, e quindi possiamo rifiutare l'ipotesi nulla tale per cui il Gdp di una nazione non è in relazione con il tasso di suicidi
 
 
 * visualizziamo il grafico corretto
@@ -557,9 +557,7 @@ ggplot(gdp_continent_no_outliers,aes(gdp_per_capita,suicidi_per_100k,color = con
 
 * formula della **retta di regressione**: 
 
-$$
-suicidi(100k) = 8.337 + ( 1.066*10^-^4 ) * GDP(procapite)
-$$
+$suicidi(100k) = 8.337 + ( 1.066*10^-4 ) * GDP(procapite)$
 
 
 ## Suicidi rispetto alla generazione di nascita 
@@ -640,6 +638,7 @@ suicide %>%
 
 ## Suicidi in relazione a genere e GDP pro capite
 
+* Come varia il tasso di suicidi fra uomini e donne in relazione al GDP pro capite?
 
 ```{r}
 
@@ -710,6 +709,8 @@ ggplot(gdp_sex_lm,aes(gdp_per_capita,suicidi_per_100k,color = sex)) +
 ```
 
 
+* visualizziamo il modello senza *outliers*
+
 ```{r}
 
 ggplot(gdp_sex_lm,aes(gdp_per_capita,suicidi_per_100k,color = sex)) +
@@ -734,9 +735,9 @@ mod4 = lm(suicidi_per_100k ~ sex,gdp_sex_lm)
 summary(mod4)
 
 ```
-* con un **R^2** pari a *0.3* questo modello è abbastanza affidabile e ha un buon potere predittivo per quanto riguarda la variabile risposta *suicidi_per_100k* rispetto alla variabile esplicativa *sex*.
+* con un **R^2** pari a *0.51* questo modello è abbastanza affidabile e ha un buon potere predittivo per quanto riguarda la variabile risposta *suicidi_per_100k* rispetto alla variabile esplicativa *sex*.
 
-* possiamo concludere che per gli uomini al crescere del *GDP pro capite* cresce il tasso di suicidi,mentre le donne qualunque sia il valore del *GDP pro capite* hanno un tasso di suicidi per lo più costante, ed è nettamente più basso rispetto a quello degli uomini
+* possiamo concludere che per gli uomini al crescere del *GDP pro capite* cresce il tasso di suicidi,mentre le donne qualunque sia il valore del *GDP pro capite* hanno un tasso di suicidi per lo più costante, nettamente più basso rispetto a quello degli uomini
 
 * il tasso di suicidi per motivi economici è in parte legato alla pressione maschile a mantenere la famiglia, che in passato era addirittura legge (obbligo del marito a mantenere la moglie).
 
