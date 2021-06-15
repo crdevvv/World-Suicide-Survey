@@ -438,33 +438,6 @@ suicide %>%
 ```
 
 
-
-## Rapporto fra ricchezza di uno stato e suicidi { .scrollable-slide}
-
-* All'aumentare della ricchezza di uno stato il suo numero di suicidi cresce o diminuisce?
-
-```{r}
-
-#correlazione media anni-suicidi
-gdp_per_stato = suicide %>%
-  group_by(country, year) %>%
-  summarize(gdp_per_capita = mean(gdp_per_capita))
-
-gdp_cor_anno = gdp_per_stato %>%
-  group_by(country) %>%
-  summarise(cor_gdp = cor(year,gdp_per_capita))
-  
-correlazione_media = gdp_cor_anno %>%
-  filter(cor_gdp != "NA") %>%
-  summarise(cor_med = (sum(cor_gdp)/97))
-
-correlazione_media
-
-```
-
-* il risultato conferma l'ipotesi in quanto c'è una forte correlazione (0.880) fra il *gdp pro capite* e lo scorrere     gli *anni*,che presuppongono lo sviluppo economico di ogni stato.
-
-
 ##  Numero di suicidi per stato rispetto al GDP { .scrollable-slide}
 
 * Gli stati più ricchi hanno un numero di suicidi maggiore ?
