@@ -1,23 +1,29 @@
 ---
 title: "Esame fondamenti di scienza dei dati"
 author: "Cristiano Roman"
-date: "4/6/2021"
+date: "16/6/2021"
 output:
-  ioslides_presentation: 
+  revealjs::revealjs_presentation:
+     theme: sky
+     transition: convex
+     css: ./style.css
+  ioslides_presentation:
     css: ./style.css
-    incremental: yes
-  slidy_presentation:
     incremental: yes
 editor_options:
   chunk_output_type: inline
 ---
 
+
 ```{r setup, include=FALSE}
+
 knitr::opts_chunk$set(cache = TRUE,echo = FALSE, message = FALSE, warning = FALSE)
 
 ```
 
+
 ```{r,include=FALSE}
+
 
 library(readr)
 library(tidyverse)
@@ -31,7 +37,7 @@ suicide = read_csv("C:/Users/Cristiano/Desktop/cris/FondamentiR/progetto esame/m
 ```
 
 
-## Introduzione
+## Introduzione { .scrollable-slide}
 
 Dataset realizzato per trovare segnali correlati all'aumento dei **suicidi** a livello globale, dal 1985 al 2016.
 Si considerano due aspetti in particolare:
@@ -64,7 +70,7 @@ head(suicide)
   + Generation Z - nati a metà anni '90 - inizi '00
   
 
-## Preprocessing del dataset
+## Preprocessing del dataset  { .scrollable-slide}
 
 * L'indice di sviluppo umano (HDI) contiene molti valori di tipo *NA*
 ```{r}
@@ -158,7 +164,7 @@ summary(suicide)
 ```
 
 
-## Variazione GDP dal 1985 al 2015
+## Variazione GDP dal 1985 al 2015  { .scrollable-slide}
 
 
 ```{r}
@@ -188,7 +194,7 @@ cor(gdp$year,gdp$n)
 ```
 
 
-## Suicidi dal 1985 al 2015
+## Suicidi dal 1985 al 2015 { .scrollable-slide}
 
 * l'**eutanasia** non viene valutata come suicidio,in quanto è considerata principalmente una procedura medica.
 
@@ -247,7 +253,7 @@ suicide%>%
 
 
 
-## Suicidi per continente
+## Suicidi per continente { .scrollable-slide}
 
 
 ```{r}
@@ -286,7 +292,7 @@ suicide %>%
 
 * l'Europa pur non essendo il continente più popolato è quello con un maggior numero di suicidi
 
-## Suicidi per stato
+## Suicidi per stato { .scrollable-slide}
  
 ```{r}
 
@@ -318,7 +324,7 @@ ggplot(states,aes(country,suicidi_per_100k,fill=continent)) +
 * L’Italia si colloca tra i Paesi del mondo a più basso rischio di suicidio, con un tasso di mortalità per questa causa che è quasi la metà rispetto alla media degli altri
 
 
-## Suicidi per età
+## Suicidi per età { .scrollable-slide}
 
 * Il tasso di suicidio è più elevato tra gli anziani, ma è tra i giovani che il suicidio rappresenta la percentuale più importante sul totale dei decessi; in Italia, così come nel resto del mondo, il suicidio è la terza più frequente causa di morte tra le persone di 15-34 anni.
 
@@ -368,7 +374,7 @@ suicide %>%
 ```
 
 
-## Età suicidi per continente
+## Età suicidi per continente { .scrollable-slide}
 
 ```{r}
 suicide %>%
@@ -388,7 +394,7 @@ suicide %>%
 * 5-54 anni l'Europa è il continente con più suicidi
 * 55+ anni il continente con più suicidi non è più l'Europa ma l'Asia
 
-## Suicidi per genere
+## Suicidi per genere { .scrollable-slide}
 
 ```{r}
 
@@ -433,7 +439,7 @@ suicide %>%
 
 
 
-## Rapporto fra ricchezza di uno stato e suicidi
+## Rapporto fra ricchezza di uno stato e suicidi { .scrollable-slide}
 
 * All'aumentare della ricchezza di uno stato il suo numero di suicidi cresce o diminuisce?
 
@@ -459,7 +465,7 @@ correlazione_media
 * il risultato conferma l'ipotesi in quanto c'è una forte correlazione (0.880) fra il *gdp pro capite* e lo scorrere     gli *anni*,che presuppongono lo sviluppo economico di ogni stato.
 
 
-##  Numero di suicidi per stato rispetto al GDP
+##  Numero di suicidi per stato rispetto al GDP { .scrollable-slide}
 
 * Gli stati più ricchi hanno un numero di suicidi maggiore ?
 
@@ -569,85 +575,7 @@ ggplot(gdp_continent_no_outliers,aes(gdp_per_capita,suicidi_per_100k,color = con
 $suicidi(100k) = 8.337 + ( 1.066 \cdot 10^-4 ) \cdot  GDP(procapite)$
 
 
-## Suicidi rispetto alla generazione di nascita 
-
-* Come varia l'andamento dei suicidi per i vari tipi di generazione nel tempo?
-
-```{r}
-
-suicide %>%
-  group_by(year,generation) %>%
-  summarize(popolazione = sum(population), 
-            suicidi = sum(suicides), 
-            suicidi_per_100k = (suicidi / popolazione) * 100000)%>%
-ggplot(aes(year,suicidi_per_100k,color = generation)) +
-  geom_line(size = 1,alpha = 0.4) + 
-  geom_smooth(alpha = 0.2) +
-  labs(title = "Suicidi per generazione",
-       x = "Anno",
-       y = "suicidi per 100k abitanti") +
-  scale_x_continuous(breaks = seq(1985,2015,3)) +
-  theme_minimal()
-
-```
-
-* notiamo che il tasso di suicidi per le generazioni *Silent('25-'42)* e *Boomers('46-'64)* è pressochè costante,o addirittura non in calo, nel tempo, mentre per *Generation X('60-'80)* e *Millennials('80-'00)* è in forte crescita.
-
-
-## Suicidi rispetto all'età
-
-* Come varia il numero di suicidi per età comprese fra i 5 e 75+ anni ?
-
-```{r}
-
-suicide %>%
-  group_by(year,age) %>%
-  summarize(popolazione = sum(population), 
-            suicidi = sum(suicides), 
-            suicidi_per_100k = (suicidi / popolazione) * 100000) %>%
-  ggplot(aes(year,suicidi_per_100k,color = age)) +
-    geom_line(aes(fill = age),size = 1) + 
-    labs(title = "Suicidi per età",
-         x = "Anno",
-         y = "suicidi per 100k abitanti") +
-    scale_x_continuous(breaks = seq(1985,2015,3)) +
-    theme_minimal()
-
-```
-
-* il trend delle curve è in discesa per quasi tutte le categorie di età, il che significa che con gli anni il numero di suicidi continua a diminuire,soprattutto per la categoria degli *over 75*. La curva dei suicidi per le persone con età da 15 a 24 anni ha un andamento costante.
-
-
-## Suicidi per continente
-
-
-* Come varia il numero di suicidi nei vari continenti?
-
-
-```{r}
-
-suicide %>%
-  group_by(year,continent) %>%
-  summarize(popolazione = sum(population), 
-            suicidi = sum(suicides), 
-            suicidi_per_100k = (suicidi / popolazione) * 100000,
-            gdp_per_capita= mean(gdp_per_capita)) %>%
-  ggplot(aes(year,suicidi_per_100k,color = continent)) +
-  geom_line(alpha = 0.3,size = 1)+ 
-    geom_smooth(alpha = 0.2) +
-  labs(title = "Suicidi per continente",
-       x = "Anno",
-       y = "suicidi per 100k abitanti") +
-  scale_x_continuous(breaks = seq(1985,2015,3)) +
-  theme_minimal()
-
-```
-
-
-* in *Europa,Asia e Africa*, il numero di suicidi è in calo, mentre in *America e Oceania* è in leggera crescita.
-
-
-## Suicidi in relazione a genere e GDP pro capite
+## Suicidi in relazione a genere e GDP pro capite { .scrollable-slide}
 
 * Come varia il tasso di suicidi fra uomini e donne in relazione al GDP pro capite?
 
@@ -746,13 +674,91 @@ mod4 = lm(suicidi_per_100k ~ sex,gdp_sex_lm)
 summary(mod4)
 
 ```
-* con un **R^2** pari a *0.3* questo modello è abbastanza affidabile e ha un mediocre potere predittivo per quanto riguarda la variabile risposta *suicidi_per_100k* rispetto alla variabile esplicativa *sex*.
+* con un **R^2** pari a *0.3* questo modello è abbastanza affidabile e ha un discreto potere predittivo per quanto riguarda la variabile risposta *suicidi_per_100k* rispetto alla variabile esplicativa *sex*.
 
 * possiamo concludere che per gli uomini al crescere del *GDP pro capite* cresce il tasso di suicidi,mentre le donne qualunque sia il valore del *GDP pro capite* hanno un tasso di suicidi per lo più costante, nettamente più basso rispetto a quello degli uomini
 
 * il tasso di suicidi per motivi economici è in parte legato alla pressione maschile a mantenere la famiglia, che in passato era addirittura legge (obbligo del marito a mantenere la moglie).
 
-## In conclusione
+
+## Suicidi rispetto alla generazione di nascita  { .scrollable-slide}
+
+* Come varia l'andamento dei suicidi per i vari tipi di generazione nel tempo?
+
+```{r}
+
+suicide %>%
+  group_by(year,generation) %>%
+  summarize(popolazione = sum(population), 
+            suicidi = sum(suicides), 
+            suicidi_per_100k = (suicidi / popolazione) * 100000)%>%
+ggplot(aes(year,suicidi_per_100k,color = generation)) +
+  geom_line(size = 1,alpha = 0.4) + 
+  geom_smooth(alpha = 0.2) +
+  labs(title = "Suicidi per generazione",
+       x = "Anno",
+       y = "suicidi per 100k abitanti") +
+  scale_x_continuous(breaks = seq(1985,2015,3)) +
+  theme_minimal()
+
+```
+
+* notiamo che il tasso di suicidi per le generazioni *Silent('25-'42)* e *Boomers('46-'64)* è pressochè costante,o addirittura non in calo, nel tempo, mentre per *Generation X('60-'80)* e *Millennials('80-'00)* è in forte crescita.
+
+
+## Suicidi rispetto all'età { .scrollable-slide}
+
+* Come varia il numero di suicidi per età comprese fra i 5 e 75+ anni ?
+
+```{r}
+
+suicide %>%
+  group_by(year,age) %>%
+  summarize(popolazione = sum(population), 
+            suicidi = sum(suicides), 
+            suicidi_per_100k = (suicidi / popolazione) * 100000) %>%
+  ggplot(aes(year,suicidi_per_100k,color = age)) +
+    geom_line(aes(fill = age),size = 1) + 
+    labs(title = "Suicidi per età",
+         x = "Anno",
+         y = "suicidi per 100k abitanti") +
+    scale_x_continuous(breaks = seq(1985,2015,3)) +
+    theme_minimal()
+
+```
+
+* il trend delle curve è in discesa per quasi tutte le categorie di età, il che significa che con gli anni il numero di suicidi continua a diminuire,soprattutto per la categoria degli *over 75*. La curva dei suicidi per le persone con età da 15 a 24 anni ha un andamento costante.
+
+
+## Suicidi per continente { .scrollable-slide}
+
+
+* Come varia il numero di suicidi nei vari continenti?
+
+
+```{r}
+
+suicide %>%
+  group_by(year,continent) %>%
+  summarize(popolazione = sum(population), 
+            suicidi = sum(suicides), 
+            suicidi_per_100k = (suicidi / popolazione) * 100000,
+            gdp_per_capita= mean(gdp_per_capita)) %>%
+  ggplot(aes(year,suicidi_per_100k,color = continent)) +
+  geom_line(alpha = 0.3,size = 1)+ 
+    geom_smooth(alpha = 0.2) +
+  labs(title = "Suicidi per continente",
+       x = "Anno",
+       y = "suicidi per 100k abitanti") +
+  scale_x_continuous(breaks = seq(1985,2015,3)) +
+  theme_minimal()
+
+```
+
+
+* in *Europa,Asia e Africa*, il numero di suicidi è in calo, mentre in *America e Oceania* è in leggera crescita.
+
+## In conclusione { .scrollable-slide}
 
 * C'è effettivamente una buona correlazione fra i *suicidi per 100k* e le variabili *gdp pro capite*,*year*,*sex* ?
 
@@ -782,6 +788,7 @@ summary(mod5)
 * **mappa riassuntiva**
 
 ![](./mappa_suicidi.png)
+
 
 
 ***
